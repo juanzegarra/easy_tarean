@@ -11,10 +11,12 @@ def parse_args():
         description="Easy post-processing of TAREAN html report")
     parser.add_argument("html_file", help="Path to the input html file")
     parser.add_argument("-o", type=str, default="output", help="Base name for output directory and files")
-    parser.add_argument("--g_size", type=int, default=180000000, help="Genome size for estimated copy number calculation (default for average Drosophila genome size)")    
+    parser.add_argument("--g_size", type=int, default=180000000, help="Genome size for estimated copy number calculation (default for average Drosophila genome size)")
     parser.add_argument("--plot", action="store_true", help="Plot clusters by size (number of reads) and annotation")
     parser.add_argument("--repeatM_file", type=str, help="path to custom annotation file")
     parser.add_argument("--custom_anno", action="store_true", help="Enable overwriting of TAREAN annotation for a external annotation file,\n more information about annotation file format on read.me")
+    parser.add_argument("--custom_sat", action="store_true", help="Enable use of custom satDNA fasta file that annotates (note that it must be a exact sequence match)")
+    parser.add_argument("--fasta_sats", type=str, help="path to custom satDNA file")
     return parser.parse_args()
 
 class TAREAN_post_processing:
@@ -22,7 +24,7 @@ class TAREAN_post_processing:
         self.html_file = html_file
         self.output_base = output_base
         self.g_size = g_size
-        #set for excluding other types of headers 
+        #set for excluding other types of headers
         self.types = {" Putative satellites (high confidence)", " Putative satellites (low confidence)", " Other"}
         self.clusters, self.metrics = self.parse_html(html_file)
 
@@ -107,8 +109,9 @@ class TAREAN_post_processing:
             output_file.write("Cluster\tProportion\tNumber of reads\tSAT prob\tconsensus\tC-index\tP-index\tAnnotation\tClassification\tEstimated copy number\n")
             for cluster in clusters:
                 output_file.write(f"{cluster['Cluster']}\t{cluster['Proportion']}\t{cluster['Number of reads']}\t{cluster['SAT prob']}\t{cluster['consensus']}\t{cluster['C-index']}\t{cluster['P-index']}\t{cluster['Annotation']}\t{cluster['Classification']}\t{cluster['Estimated copy number']}\n")
-                fasta_out.write(f">{cluster['Cluster']}\t{cluster['Classification']}\n{cluster['consensus']}\n")
-    
+                if cluster["consensus"] != "":
+                  fasta_out.write(f">{cluster['Cluster']}\t{cluster['Classification']}\n{cluster['consensus']}\n")
+
     def overwrited_annotation(self, repeatM_file, clusters):
         with open(repeatM_file, "r") as infile:
             custom_annotation = defaultdict(str)
@@ -121,7 +124,7 @@ class TAREAN_post_processing:
                     cluster = re.sub(r"^CL0*", r"", cluster)
                     annotation = parts[1]
                     custom_annotation[cluster] = annotation
-        
+
         for cluster in clusters:
             cluster_tarean = cluster["Cluster"]
             annotation_tarean = cluster["Annotation"]
@@ -129,9 +132,19 @@ class TAREAN_post_processing:
             if cluster_tarean_clean in custom_annotation:
                 cluster["Annotation"] = custom_annotation[cluster_tarean_clean]
 
+    def sat_annotation(self, clusters, fasta_sats):
+        fasta_seqs = SeqIO.parse(fasta_sats, "fasta")
+
+        for cluster in clusters:
+            cluster_seq = cluster["consensus"]
+            for seq in fasta_seqs:
+                if cluster_seq == seq.seq:
+                    cluster["Annotation"] = f"{seq.id}"
+
+
     def plot_clusters(self):
         subprocess.run(["plot_clusters.R", f"{self.output_base}.tsv", f"plot{self.output_base}.png"])
-        
+
 
 def main():
     args = parse_args()
@@ -139,7 +152,7 @@ def main():
     output_base = args.o
     g_size = args.g_size
     #sanity checking custom annotation files
-    
+
 
     tarean = TAREAN_post_processing(html_file, output_base, g_size)
     tarean.correct_metrics(tarean.metrics, tarean.clusters)
@@ -150,6 +163,12 @@ def main():
         tarean.overwrited_annotation(repeatM_file, tarean.clusters)
     elif args.custom_anno and not args.repeatM_file:
         print("Provide a valid annotation file")
+
+    if args.custom_sat and args.fasta_sats:
+        fasta_sats = args.fasta_sats
+        tarean.sat_annotation(tarean.clusters, fasta_sats)
+    elif args.custom_sat and not args.fasta_sats:
+        print("Provide a valid fasta file")
 
     tarean.write_files(tarean.clusters, tarean.metrics)
 
