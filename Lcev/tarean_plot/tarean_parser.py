@@ -110,11 +110,15 @@ class TAREAN_post_processing:
                                 annotation = clean_annotation[0].text.split(
                                     "%"
                                 )[1]
+                                annotation = annotation.strip()
                             elif not i.text:
                                 annotation = "NA"
+                            elif "contamination" in i.text.lower():
+                                annotation = "contamination"
                             else:
                                 annotation_value = float(i.text.split("%")[0])
                                 annotation_name = i.text.split("%")[1]
+                                annotation_name = annotation_name.strip()
                                 max_annotation[annotation_name] = (
                                     annotation_value
                                 )
@@ -141,8 +145,9 @@ class TAREAN_post_processing:
     def correct_metrics(self, metrics, clusters):
         contamination = 0
         for cluster in clusters:
-            if cluster["Annotation"] == "Contamination":
+            if cluster["Annotation"] == "contamination":
                 contamination += int(cluster["Number of reads"])
+                clusters.remove(cluster)
         self.metrics["Number of analyzed reads"] = (
             int(metrics["Number of analyzed reads"]) - contamination
         )
@@ -199,19 +204,19 @@ class TAREAN_post_processing:
                 cluster["Annotation"] = custom_annotation[cluster_tarean_clean]
 
     def sat_annotation(self, clusters, fasta_sats):
-        fasta_seqs = SeqIO.parse(fasta_sats, "fasta")
+        fasta_seqs = list(SeqIO.parse(fasta_sats, "fasta"))
 
         for cluster in clusters:
             cluster_seq = cluster["consensus"]
             for seq in fasta_seqs:
                 if cluster_seq == seq.seq:
-                    cluster["Annotation"] = "Satellite"
+                    cluster["Annotation"] = "satDNA"
 
     def plot_clusters(self):
         subprocess.run(
             [
                 "plot_clusters.R",
-                f"{self.output_base}.tsv",
+                "temp_correction.tsv",
                 f"repeat_stats_{self.output_base}.tsv",
                 f"cluster_plot_{self.output_base}.png",
                 f"stat_plot_{self.output_base}.png",
@@ -225,7 +230,8 @@ class TAREAN_post_processing:
             # sum proportions of repetitive elements
             for cluster in clusters:
                 anno = correct_names(cluster["Annotation"])
-                stats[anno] += cluster["Proportion"]
+                if anno != "contamination" and anno != "Contamination":
+                  stats[anno] += cluster["Proportion"]
 
             # now write them
             for item in stats:
@@ -284,6 +290,8 @@ def correct_names(name):
         match = re.search(key, name)
         if match:
             return hash[key]
+    if name == "" or name == "unknown":
+        return "NA"
     return name
 
 

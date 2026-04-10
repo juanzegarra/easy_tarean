@@ -22,7 +22,7 @@ ann_colors <- c(
   "SINE" = "#21918C",
   "Helitron" = "#5DC863",
   "Mutator" = "#277DA1",
-  "hAT" = "#F8961E",
+  "hAT" = "#42ff21",
   "TcMar" = "#F3722C",
   "PiggyBac" = "#F94144",
   "PIF-Harbinger" = "#9B5DE5",
@@ -33,12 +33,22 @@ ann_colors <- c(
   "Organelle" = "#FDE725",
   "rDNA" = "#B56576",
   "NA" = "#898989",
-  "total" = "#000000"
+  "satDNA" = "#ff0000",
+  "Non-Repetitive" = "#a3a9ff"
 )
 
 df_sum$Annotation[df_sum$Annotation == "" |
                      is.na(df_sum$Annotation) |
                      df_sum$Annotation == "unknown"] <- "NA"
+
+df2$Type <- as.character(df2$Type)
+
+df2$Type[df2$Type == "unknown"] <- "NA"
+df2$Type[df2$Type == "total"] <- "Non-Repetitive"
+df2$Type[is.na(df2$Type)| df2$Type=="<NA>"| df2$Type==""] <- "NA"
+
+
+df2$Type <- reorder(df2$Type, df2$Proportion)
 
 df_sum$Annotation[is.na(df_sum$Annotation)| df_sum$Annotation=="<NA>"] <- "NA"
 
@@ -87,4 +97,5 @@ q <- ggplot(df2, aes(x = "", y = Proportion, fill = Type)) +
     )+
   scale_fill_manual(values = ann_colors, drop = TRUE)
 
+ggsave(output_clusters, p, width = 8, height = 6, dpi = 300)
 ggsave(output_stats, q, width = 8, height = 6, dpi = 300)
