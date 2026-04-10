@@ -32,7 +32,8 @@ ann_colors <- c(
   "TIR" = "#90BE6D",
   "Organelle" = "#FDE725",
   "rDNA" = "#B56576",
-  "NA" = "#898989"
+  "NA" = "#898989",
+  "total" = "#000000"
 )
 
 df_sum$Annotation[df_sum$Annotation == "" |
@@ -69,7 +70,7 @@ q <- ggplot(df2, aes(x = "", y = Proportion, fill = Type)) +
     geom_bar(stat = "identity", width = 1) +
     coord_polar(theta = "y") +
       geom_text(
-        aes(label = ifelse(Proportion > 1.0,
+        aes(label = ifelse(Proportion > 2.0,
                    sprintf("%.1f", Proportion),
                    "")),
         position = position_stack(vjust = 0.5),

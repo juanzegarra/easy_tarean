@@ -231,7 +231,7 @@ class TAREAN_post_processing:
             for item in stats:
                 out.write(f"{item}\t{stats[item]}\n")
             non_repetitive = 100 - sum(stats.values())
-            out.write(f"NA\t{non_repetitive}")
+            out.write(f"total\t{non_repetitive}")
 
     # correction for TE names just for plotting
     def plot_correction(self, clusters):
