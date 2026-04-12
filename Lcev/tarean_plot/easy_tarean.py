@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+
+'''
+Module that performs parsing of tarean html result file, plots and returns metrics of cluster annotation and genome proportion
+Author: Juan Zegarra <juanzegarra71@gmail.com>
+Date: 12/04/2026
+'''
+
 from Bio import SeqIO
 import re
 import pandas as pd
