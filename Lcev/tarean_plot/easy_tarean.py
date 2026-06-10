@@ -293,6 +293,7 @@ def correct_names(name):
         "CMC": "CMC",
         "Mutator": "Mutator",
         "TcMar": "TcMar",
+        "Maverick" : "Maverick"
     }
     for key in hash.keys():
         match = re.search(key, name)

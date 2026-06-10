@@ -34,7 +34,8 @@ ann_colors <- c(
   "rDNA" = "#B56576",
   "NA" = "#898989",
   "satDNA" = "#ff0000",
-  "Non-Repetitive" = "#a3a9ff"
+  "Non-Repetitive" = "#a3a9ff",
+  "Maverick" = "#78763e"
 )
 
 df_sum$Annotation[df_sum$Annotation == "" |
